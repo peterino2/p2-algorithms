@@ -20,6 +20,34 @@ const LookupPerfContext = struct {
             .testTimes = std.ArrayList(std.ArrayList(f64)).init(allocator),
         };
     }
+
+    pub fn printResults(self: @This()) void 
+    {
+        // prints out results in a csv format
+        println("Test Results: {s}", .{self.testName});
+        std.debug.print("number of elements,", .{});
+        for(self.dsName.items) |name|
+        {
+            std.debug.print("{s},", .{name});
+        }
+        std.debug.print("\n", .{});
+
+        std.debug.assert(self.testSizes.items.len == self.testTimes.items.len);
+
+        var i: usize = 0;
+        while(i < self.testSizes.items.len): (i += 1)
+        {
+            std.debug.print("{d},", .{self.testSizes.items[i]});
+            var times = self.testTimes.items[i];
+
+            for(times.items) |entry|
+            {
+                std.debug.print("{d},", .{entry});
+            }
+
+            std.debug.print("\n", .{});
+        }
+    }
 };
 
 pub fn LookupPerfTest(allocator: std.mem.Allocator, perfContext: *LookupPerfContext, comptime TestSize: comptime_int, comptime AccessCount: comptime_int) !void
@@ -140,6 +168,10 @@ const K = 1000;
 const M = 1000 * K;
 const G = 1000 * M;
 
+pub fn count(comptime n: anytype) [n]u0 {
+    return comptime [1]u0{0} ** n;
+}
+
 test "Perf test sparse vs hashmap"
 {
     // this test does NOT care about freeing memory, just gonna let the arena hit it.
@@ -148,15 +180,14 @@ test "Perf test sparse vs hashmap"
     var arenaAlloc = arena.allocator();
 
     var context = LookupPerfContext.init(arenaAlloc);
-    try context.dsName.append("hashmap");
-    try context.dsName.append("sparseSet");
-    try context.dsName.append("hashmap_linear");
-    try context.dsName.append("sparseset_linear");
+    try context.dsName.append("hashmap random");
+    try context.dsName.append("sparseSet random");
+    try context.dsName.append("hashmap linear");
+    try context.dsName.append("sparseset linear");
 
-    try LookupPerfTest(arenaAlloc, &context, 10, 10 * M);
-    try LookupPerfTest(arenaAlloc, &context, 100, 10 * M);
-    try LookupPerfTest(arenaAlloc, &context, 1 * K, 10 * M);
-    try LookupPerfTest(arenaAlloc, &context, 10 * K, 10 * M);
-    try LookupPerfTest(arenaAlloc, &context, 100 * K, 10 * M);
-    try LookupPerfTest(arenaAlloc, &context, 200 * K, 10 * M);
+    inline for (comptime count(100 - 1)) |_, i| {
+        try LookupPerfTest(arenaAlloc, &context, (i + 1) * (100 * K) / 100 , 100 * M);
+    }
+
+    context.printResults();
 }
