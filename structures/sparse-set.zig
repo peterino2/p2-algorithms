@@ -109,7 +109,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             return denseIndex;
         }
 
-        pub fn FieldType(field: Field) type 
+        pub fn FieldType(comptime field: Field) type 
         {
             return std.meta.fieldInfo(T, field).field_type;
         }
