@@ -59,8 +59,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             return self;
         }
 
-        pub fn denseItems(self: *@This(), comptime field: Field) []FieldType(field)
-        {
+        pub fn denseItems(self: *@This(), comptime field: Field) []FieldType(field) {
             return self.dense.items(field);
         }
 
@@ -109,9 +108,8 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             return denseIndex;
         }
 
-        pub fn FieldType(comptime field: Field) type 
-        {
-            return std.meta.fieldInfo(T, field).field_type;
+        pub fn FieldType(comptime field: Field) type {
+            return std.meta.fieldInfo(T, field).type;
         }
 
         pub fn get(self: *@This(), handle: SetHandle, comptime field: Field) ?*FieldType(field) {
@@ -135,8 +133,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             return self.createObjectInternal(initValue, newSparseIndex, generation);
         }
 
-        pub fn createObjectInternal(self: *@This(), initValue: T, newSparseIndex: IndexType, generation: GenerationType) !SetHandle 
-        {
+        pub fn createObjectInternal(self: *@This(), initValue: T, newSparseIndex: IndexType, generation: GenerationType) !SetHandle {
             var newDenseIndex = self.denseIndices.items.len;
             self.sparse[@intCast(usize, newSparseIndex)] = SetHandle{
                 .alive = true,
@@ -157,8 +154,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             return setHandle;
         }
 
-        pub fn createWithHandle(self: *@This(), handle: SetHandle, initValue: T) !SetHandle
-        {
+        pub fn createWithHandle(self: *@This(), handle: SetHandle, initValue: T) !SetHandle {
             // std.debug.print("creating set with handle: {any}\n", .{handle});
             var currentDenseHandle = self.sparse[handle.index];
             if (currentDenseHandle.alive) {

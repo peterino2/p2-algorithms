@@ -26,16 +26,17 @@ const LookupPerfContext = struct {
         // prints out results in a csv format
         println("Test Results: {s}", .{self.testName});
         std.debug.print("number of elements,", .{});
+
         for(self.dsName.items) |name|
         {
             std.debug.print("{s},", .{name});
         }
-        std.debug.print("\n", .{});
 
+        std.debug.print("\n", .{});
         std.debug.assert(self.testSizes.items.len == self.testTimes.items.len);
 
         var i: usize = 0;
-        while(i < self.testSizes.items.len): (i += 1)
+        while(i < self.testSizes.items.len) : (i += 1)
         {
             std.debug.print("{d},", .{self.testSizes.items[i]});
             var times = self.testTimes.items[i];
@@ -50,8 +51,12 @@ const LookupPerfContext = struct {
     }
 };
 
-pub fn LookupPerfTest(allocator: std.mem.Allocator, perfContext: *LookupPerfContext, comptime TestSize: comptime_int, comptime AccessCount: comptime_int) !void
-{
+pub fn LookupPerfTest(
+    allocator: std.mem.Allocator,
+    perfContext: *LookupPerfContext,
+    comptime TestSize: comptime_int,
+    comptime AccessCount: comptime_int
+) !void {
     var prng = std.rand.DefaultPrng.init(12348);
     var rand = prng.random();
 
@@ -77,7 +82,7 @@ pub fn LookupPerfTest(allocator: std.mem.Allocator, perfContext: *LookupPerfCont
         try testMap.put(@intCast(u32, i), .{});
     }
     i = 0;
-    _ = rand;
+
     var hashMapTime: f64 = 0;
 
     {
@@ -132,7 +137,6 @@ pub fn LookupPerfTest(allocator: std.mem.Allocator, perfContext: *LookupPerfCont
         const startTime = timer.read();
         while(i < AccessCount) : (i += 1)
         {
-            // const id = rand.int(usize) % TestSize;
             testSet.get(handlesList.items[ i % TestSize ], .obj).?.*.touchCount += 1;
         }
         const endTime = timer.read();
