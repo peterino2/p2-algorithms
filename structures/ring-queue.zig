@@ -6,13 +6,69 @@ pub const RingQueueError = error{
     AllocSizeTooSmall,
 };
 
+// managed version of the ringqueue, includes a mutex
+pub fn RingQueue(comptime T: type) type {
+    return struct {
+        const _InnerType = RingQueueU(T);
+
+        queue: _InnerType,
+        allocator: std.mem.Allocator,
+        mutex: std.Thread.Mutex = .{},
+
+        pub fn init(allocator: std.mem.Allocator, size: usize) !@This() {
+            var newSelf = @This(){
+                .queue = try _InnerType.init(allocator, size),
+                .allocator = allocator,
+                .mutex = .{},
+            };
+
+            return newSelf;
+        }
+
+        pub fn pushLocked(self: @This(), newValue: T) RingQueueError!void {
+            self.mutex.lock();
+            try self.queue.push(newValue);
+            defer self.mutex.unlock();
+        }
+
+        // only call this if you have locked already
+        pub fn popFromUnlocked(self: *@This()) ?T {
+            return self.queue.pop();
+        }
+
+        pub fn lock(self: *@This()) void {
+            self.mutex.lock();
+        }
+
+        pub fn unlock(self: *@This()) void {
+            self.mutex.unlock();
+        }
+
+        pub fn popFromLocked(self: *@This()) ?T {
+            try self.mutex.lock();
+            defer self.mutex.unlock();
+            const val = self.queue.pop();
+            return val;
+        }
+
+        pub fn count(self: @This()) usize {
+            return self.queue.count();
+        }
+
+        pub fn deinit(self: *@This()) void {
+            self.queue.deinit();
+        }
+    };
+}
+
 // tail points to next free
 // head points to next one to read
+// unmanaged ring queue
 pub fn RingQueueU(comptime T: type) type {
     return struct {
         buffer: []T = undefined,
-        head: usize = 0, // not stable across resizes
-        tail: usize = 0, // not stable across resizes
+        head: usize = 0, // resets upon resizes
+        tail: usize = 0, // resets upon resizes
 
         pub fn init(allocator: std.mem.Allocator, size: usize) !@This() {
             var self = @This(){
@@ -23,7 +79,6 @@ pub fn RingQueueU(comptime T: type) type {
         }
 
         pub fn push(self: *@This(), value: T) RingQueueError!void {
-
             const next = (self.tail + 1) % self.buffer.len;
 
             if (next == self.head) {
@@ -98,7 +153,6 @@ pub fn RingQueueU(comptime T: type) type {
         }
 
         pub fn at(self: *@This(), offset: usize) ?*T {
-
             const c = self.count();
 
             if (c == 0) {
@@ -121,10 +175,9 @@ pub fn RingQueueU(comptime T: type) type {
         }
 
         pub fn resize(self: *@This(), allocator: std.mem.Allocator, size: usize) !void {
-
             const c = self.count();
 
-            // size needs to be greater by 1, tail always points to an empty
+            // new size needs to be greater than current size by 1, tail always points to an empty
             if (c >= size) {
                 return error.AllocSizeTooSmall;
             }

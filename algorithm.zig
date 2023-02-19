@@ -7,6 +7,7 @@ const ArrayListUnmanaged = std.ArrayListUnmanaged;
 pub const ring_queue = @import("structures/ring-queue.zig");
 
 pub const RingQueueU = ring_queue.RingQueueU;
+pub const RingQueue = ring_queue.RingQueue;
 
 pub const sparse_set = @import("structures/sparse-set.zig");
 
@@ -33,9 +34,9 @@ test "multi-sparse-basic" {
 
     var testSet = SparseMultiSet(TestStruct).init(allocator);
     defer testSet.deinit();
-    var sparseHandle = try testSet.createObject(.{ .field1 = 1, .structField = .{.x = 12} });
-    var sparseHandle1 = try testSet.createObject(.{ .field1 = 2, .structField = .{.x = 34} });
-    var sparseHandle2 = try testSet.createObject(.{ .field1 = 3, .structField = .{.x = 56} });
+    var sparseHandle = try testSet.createObject(.{ .field1 = 1, .structField = .{ .x = 12 } });
+    var sparseHandle1 = try testSet.createObject(.{ .field1 = 2, .structField = .{ .x = 34 } });
+    var sparseHandle2 = try testSet.createObject(.{ .field1 = 3, .structField = .{ .x = 56 } });
     std.debug.print("handle: {any}\n", .{testSet.get(sparseHandle, .field1).?.*});
     std.debug.print("handle1: {any}\n", .{testSet.get(sparseHandle1, .field1).?.*});
     std.debug.print("handle2: {any}\n", .{testSet.get(sparseHandle2, .field1).?.*});
@@ -136,7 +137,6 @@ test "sparse-set" {
 
     try expect(set.dense.items.len == 0);
 }
-
 
 test "ringBuffer" {
     std.debug.print("\nbuffer test: filling a ring buffer\n", .{});
