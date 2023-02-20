@@ -25,7 +25,7 @@ pub fn RingQueue(comptime T: type) type {
             return newSelf;
         }
 
-        pub fn pushLocked(self: @This(), newValue: T) RingQueueError!void {
+        pub fn pushLocked(self: *@This(), newValue: T) RingQueueError!void {
             self.mutex.lock();
             try self.queue.push(newValue);
             defer self.mutex.unlock();
