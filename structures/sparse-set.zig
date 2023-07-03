@@ -1,4 +1,3 @@
-// ---- ----
 const std = @import("std");
 
 const ArrayList = std.ArrayList;
@@ -20,7 +19,7 @@ pub const SetHandle = packed struct {
     alive: bool = false,
 
     pub fn hash(self: @This()) u32 {
-        return @bitCast(u32, self);
+        return @as(u32, @bitCast(self));
     }
 };
 
@@ -52,7 +51,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
                 .sparse = allocator.alloc(SetHandle, SparseSize) catch unreachable,
             };
 
-            for (self.sparse) |_, i| {
+            for (self.sparse, 0..) |_, i| {
                 self.sparse[i] = .{ .generation = 0, .index = 0x0, .alive = false };
             }
 
@@ -80,13 +79,13 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         // ----- sparse set features -----
 
         pub fn handleFromSparseIndex(self: @This(), sparseIndex: IndexType) SetHandle {
-            var handle: SetHandle = self.sparse[@intCast(usize, sparseIndex)];
+            var handle: SetHandle = self.sparse[@as(usize, @intCast(sparseIndex))];
             handle.index = sparseIndex;
             return handle;
         }
 
         pub fn sparseToDense(self: @This(), handle: SetHandle) ?usize {
-            const denseHandle = self.sparse[@intCast(usize, handle.index)];
+            const denseHandle = self.sparse[@as(usize, @intCast(handle.index))];
 
             // todo: need to update generation
             if (denseHandle.generation != handle.generation) // tombstone value
@@ -99,7 +98,7 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
                 return null;
             }
 
-            const denseIndex = @intCast(usize, denseHandle.index);
+            const denseIndex = @as(usize, @intCast(denseHandle.index));
 
             if (denseIndex >= self.denseIndices.items.len) {
                 return null;
@@ -122,11 +121,11 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         pub fn createObject(self: *@This(), initValue: T) !SetHandle {
             var newSparseIndex = newRandomIndex();
 
-            var denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+            var denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
 
             while (denseHandle.alive == true) {
                 newSparseIndex = newRandomIndex();
-                denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+                denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
             }
             const generation = (denseHandle.generation + 1) % (std.math.maxInt(GenerationType));
 
@@ -135,10 +134,10 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
 
         pub fn createObjectInternal(self: *@This(), initValue: T, newSparseIndex: IndexType, generation: GenerationType) !SetHandle {
             var newDenseIndex = self.denseIndices.items.len;
-            self.sparse[@intCast(usize, newSparseIndex)] = SetHandle{
+            self.sparse[@as(usize, @intCast(newSparseIndex))] = SetHandle{
                 .alive = true,
-                .generation = @intCast(GenerationType, generation),
-                .index = @intCast(IndexType, newDenseIndex),
+                .generation = @as(GenerationType, @intCast(generation)),
+                .index = @as(IndexType, @intCast(newDenseIndex)),
             };
 
             var setHandle = SetHandle{
@@ -179,12 +178,12 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             const sparseIndexToSwap = self.denseIndices.items[tailDenseIndex];
 
             // redirect the sparse index to the new position of the swapped object.
-            self.sparse[@intCast(usize, sparseIndexToSwap.index)].index = @intCast(IndexType, denseIndex);
+            self.sparse[@as(usize, @intCast(sparseIndexToSwap.index))].index = @as(IndexType, @intCast(denseIndex));
 
             // perform the swap and remove, mark the tombstone as well.
             _ = self.dense.swapRemove(denseIndex);
             _ = self.denseIndices.swapRemove(denseIndex);
-            self.sparse[@intCast(usize, handle.index)].alive = false;
+            self.sparse[@as(usize, @intCast(handle.index))].alive = false;
 
             return true;
         }
@@ -193,11 +192,11 @@ pub fn SparseMultiSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         var rand = prng.random();
 
         pub fn newRandomIndex() IndexType {
-            if (SparseSize == std.math.maxInt(GenerationType)) {
+            if (SparseSize == std.math.maxInt(IndexType)) {
                 return rand.int(IndexType);
             }
 
-            return rand.int(IndexType) % @intCast(IndexType, SparseSize);
+            return rand.int(IndexType) % @as(IndexType, @intCast(SparseSize));
         }
     };
 }
@@ -215,7 +214,7 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         sparse: []SetHandle,
 
         pub fn handleFromSparseIndex(self: @This(), sparseIndex: IndexType) SetHandle {
-            var handle: SetHandle = self.sparse[@intCast(usize, sparseIndex)];
+            var handle: SetHandle = self.sparse[@as(usize, @intCast(sparseIndex))];
             handle.index = sparseIndex;
             return handle;
         }
@@ -228,7 +227,7 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             };
             std.debug.print("sparseLen: {d}\n", .{self.sparse.len});
 
-            for (self.sparse) |_, i| {
+            for (self.sparse, 0..) |_, i| {
                 self.sparse[i] = .{ .generation = 0, .index = 0x0, .alive = false };
             }
 
@@ -244,7 +243,7 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         }
 
         pub fn sparseToDense(self: @This(), handle: SetHandle) ?usize {
-            const denseHandle = self.sparse[@intCast(usize, handle.index)];
+            const denseHandle = self.sparse[@as(usize, @intCast(handle.index))];
 
             // todo: need to update generation
             if (denseHandle.generation != handle.generation) // tombstone value
@@ -257,7 +256,7 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
                 return null;
             }
 
-            const denseIndex = @intCast(usize, denseHandle.index);
+            const denseIndex = @as(usize, @intCast(denseHandle.index));
 
             if (denseIndex >= self.dense.items.len) {
                 return null;
@@ -279,21 +278,21 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             const tailDenseIndex = self.dense.items.len - 1;
             const sparseIndexToSwap = self.dense.items[tailDenseIndex].sparseIndex;
 
-            self.sparse[@intCast(usize, sparseIndexToSwap)].index = @intCast(IndexType, denseIndex);
+            self.sparse[@as(usize, @intCast(sparseIndexToSwap))].index = @as(IndexType, @intCast(denseIndex));
 
             _ = self.dense.swapRemove(denseIndex);
-            self.sparse[@intCast(usize, handle.index)].alive = false;
+            self.sparse[@as(usize, @intCast(handle.index))].alive = false;
         }
 
         var prng = std.rand.DefaultPrng.init(0x1234);
         var rand = prng.random();
 
         fn newRandomIndex() IndexType {
-            if (SparseSize == DefaultSparseSize) {
+            if (SparseSize == std.math.maxInt(IndexType)) {
                 return rand.int(IndexType);
             }
 
-            return rand.int(IndexType) % @intCast(IndexType, SparseSize);
+            return rand.int(IndexType) % @as(IndexType, @intCast(SparseSize));
         }
 
         // the idea behind a sparse array is that the sethandle is
@@ -301,11 +300,11 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         pub fn createObject(self: *@This(), initValue: T) !SetHandle {
             var newSparseIndex = newRandomIndex();
 
-            var denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+            var denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
 
             while (denseHandle.alive == true) {
                 newSparseIndex = newRandomIndex();
-                denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+                denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
             }
 
             var newDenseIndex = self.dense.items.len;
@@ -316,10 +315,10 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
 
             const generation = (denseHandle.generation + 1) % (std.math.maxInt(GenerationType));
 
-            self.sparse[@intCast(usize, newSparseIndex)] = SetHandle{
+            self.sparse[@as(usize, @intCast(newSparseIndex))] = SetHandle{
                 .alive = true,
-                .generation = @intCast(GenerationType, generation),
-                .index = @intCast(IndexType, newDenseIndex),
+                .generation = @as(GenerationType, @intCast(generation)),
+                .index = @as(IndexType, @intCast(newDenseIndex)),
             };
 
             var setHandle = SetHandle{
@@ -362,10 +361,10 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
                 generation = (generation + 1) % (std.math.maxInt(GenerationType));
             }
 
-            self.sparse[@intCast(usize, sparseIndex)] = SetHandle{
+            self.sparse[@as(usize, @intCast(sparseIndex))] = SetHandle{
                 .alive = true,
-                .generation = @intCast(GenerationType, generation),
-                .index = @intCast(IndexType, newDenseIndex),
+                .generation = @as(GenerationType, @intCast(generation)),
+                .index = @as(IndexType, @intCast(newDenseIndex)),
             };
 
             var setHandle = SetHandle{
@@ -375,7 +374,7 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
             };
 
             const rv = ConstructResult{
-                .ptr = &self.dense.items[@intCast(usize, newDenseIndex)].value,
+                .ptr = &self.dense.items[@as(usize, @intCast(newDenseIndex))].value,
                 .handle = setHandle,
             };
 
@@ -385,11 +384,11 @@ pub fn SparseSetAdvanced(comptime T: type, comptime SparseSize: u32) type {
         pub fn createAndGet(self: *@This(), initValue: T) !ConstructResult {
             var newSparseIndex = newRandomIndex();
 
-            var denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+            var denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
 
             while (denseHandle.alive == true) {
                 newSparseIndex = newRandomIndex();
-                denseHandle = self.sparse[@intCast(usize, newSparseIndex)];
+                denseHandle = self.sparse[@as(usize, @intCast(newSparseIndex))];
             }
 
             return try self.createAndGetInteral(denseHandle, newSparseIndex, initValue, true);

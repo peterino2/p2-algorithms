@@ -89,17 +89,17 @@ pub fn RingQueueU(comptime T: type) type {
         }
 
         pub fn pushFront(self: *@This(), value: T) !void {
-            var iHead = @intCast(isize, self.head) - 1;
+            var iHead = @as(isize, @intCast(self.head)) - 1;
 
             if (iHead < 0) {
-                iHead = @intCast(isize, self.buffer.len) + iHead;
+                iHead = @as(isize, @intCast(self.buffer.len)) + iHead;
             }
 
-            if (iHead == @intCast(isize, self.tail)) {
+            if (iHead == @as(isize, @intCast(self.tail))) {
                 return error.QueueIsFull;
             }
 
-            self.head = @intCast(usize, iHead);
+            self.head = @as(usize, @intCast(iHead));
             self.buffer[self.head] = value;
         }
 
@@ -143,13 +143,13 @@ pub fn RingQueueU(comptime T: type) type {
                 return null;
             }
 
-            var x: isize = @intCast(isize, self.tail) - @intCast(isize, offset);
+            var x: isize = @as(isize, @intCast(self.tail)) - @as(isize, @intCast(offset));
 
             if (x < 0) {
-                x = @intCast(isize, self.buffer.len) + x;
+                x = @as(isize, @intCast(self.buffer.len)) + x;
             }
 
-            return &self.buffer[@intCast(usize, x)];
+            return &self.buffer[@as(usize, @intCast(x))];
         }
 
         pub fn at(self: *@This(), offset: usize) ?*T {
