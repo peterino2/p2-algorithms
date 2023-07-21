@@ -17,6 +17,8 @@ pub const SparseSetAdvanced = sparse_set.SparseSetAdvanced;
 pub const SparseMultiSetAdvanced = sparse_set.SparseMultiSetAdvanced;
 pub const SetHandle = sparse_set.SetHandle;
 
+pub const stack_structures = @import("structures/stack-structures.zig");
+
 // ---- aliases ----
 pub const ObjectHandle = SetHandle;
 
