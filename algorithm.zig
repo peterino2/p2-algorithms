@@ -4,6 +4,9 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const ArrayListUnmanaged = std.ArrayListUnmanaged;
 
+pub const static_structures = @import("structures/static-structures.zig");
+pub const StaticArrayList = static_structures.StaticArrayList;
+
 pub const ring_queue = @import("structures/ring-queue.zig");
 
 pub const RingQueueU = ring_queue.RingQueueU;
