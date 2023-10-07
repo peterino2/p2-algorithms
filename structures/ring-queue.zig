@@ -56,7 +56,7 @@ pub fn RingQueue(comptime T: type) type {
         }
 
         pub fn deinit(self: *@This()) void {
-            self.queue.deinit();
+            self.queue.deinit(self.allocator);
         }
     };
 }
