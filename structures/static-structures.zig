@@ -1,14 +1,33 @@
-pub fn StaticArrayList(comptime T: type, comptime size: usize) type {
+const std = @import("std");
+
+fn makeSlice(comptime T: type, ptr: *T, len: usize) []T {
+    var slice: []T = undefined;
+    slice.len = len;
+    slice.ptr = ptr;
+    return slice;
+}
+
+// A completely static arraylist, returns out of capacity when it's full.
+// does NOT do any kind of allocator backing.
+pub fn StaticVector(comptime T: type, comptime size: usize) type {
     return struct {
-        _data: [size]T,
-        len: u32 = 0,
+        fn makeEmptySlice() []T {
+            var slice: []T = undefined;
+            slice.len = 0;
+            slice.ptr = undefined;
+            return slice;
+        }
+
+        _data: [size]T = undefined,
+        items: []T = makeEmptySlice(),
 
         pub fn append(self: *@This(), value: T) !void {
             if (self.len >= size)
                 return error.OutOfCapacity;
 
-            self.data[self.len] = value;
-            self.len += 1;
+            self._data[self.len] = value;
+            self.items.ptr = &self._data[0];
+            self.items.len += 1;
         }
 
         pub fn pop(self: *@This()) ?T {
@@ -16,23 +35,36 @@ pub fn StaticArrayList(comptime T: type, comptime size: usize) type {
                 return null;
             }
 
-            self.len -= 1;
+            self.items.len -= 1;
             return self._data[self.len];
-        }
-
-        pub fn items(self: *@This()) ![]T {
-            var ptr: []T = undefined;
-            ptr.ptr = self._data;
-            ptr.len = self.len;
-            return ptr;
         }
     };
 }
 
-test "static array list" {
-    var al = StaticArrayList(struct { x: u32 = 0 }, 42);
+test "static vector" {
+    var al = StaticVector(struct { x: u32 = 0 }, 42).init();
 
     for (0..42) |i| {
         try al.append(.{ .x = i });
     }
+
+    std.debug.assert(al.items[0].x == 0);
+    std.debug.assert(al.items[1].x == 1);
+} //
+
+// TODO:
+//
+// this is a fixed size vector which
+// exists on the stack until it exceeds the static capacity.
+// in which case it gets bumped to the heap with an allocator.
+pub fn SmallVectorUnmanaged(comptime T: type, comptime size: usize) type {
+    return struct {
+        data: [size]T = undefined,
+        ptr: *T = undefined,
+        len: usize = 0,
+
+        pub fn append(self: *@This()) !void {
+            _ = self;
+        }
+    };
 }
