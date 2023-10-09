@@ -26,10 +26,10 @@ pub const NullHandle: Handle = .{};
 //
 // This is highly performant for usecases where:
 // - You want a pool of same sized objects
-// - AND want to efficiently iterate through them later
-// - AND want weak external handles to objects with constant time, non-hashing lookup.
-// - AND DO NOT care about retaining pointers across operations.
-// - AND DO NOT care about preserving order of insertion within the data structure.
+// - You want to efficiently iterate through them later
+// - You want weak external handles to objects with constant time, non-hashing lookup.
+// - You DO NOT care about retaining pointers across operations.
+// - You DO NOT care about preserving order of insertion within the data structure.
 //
 // great for:
 // - nodes in a ui library (this was what it was originally created for)
