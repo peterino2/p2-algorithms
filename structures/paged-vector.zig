@@ -1,9 +1,10 @@
 const std = @import("std");
 
 // it's like an normal vector/ arraylist except it never invalidates old pointers.
-// and never causes re-allocations. (excepting in the control block)
+// and never causes re-allocations. (excepting in the control block, which is just a vector of things)
 //
 // it has a growth factor, which can be configured.
+//
 
 pub fn PagedVectorAdvanced(comptime T: type, comptime growth: usize) type {
     return struct {
@@ -153,10 +154,21 @@ test "simple loading multiple pages." {
     std.debug.assert(ptr == vector.get(0));
     std.debug.assert(mutable == vector.getMutable(127));
 
+    std.debug.assert(vector.getMutable(4092) == vector.getMutable(4092));
+
     // 4096 + 128 = 4224 = 4 pages + 128 extra entries
     std.debug.assert(vector.pages.items.len == 5);
     std.debug.assert(vector.capacity() == 1024 * 5);
     std.debug.assert(vector.usage() == 128 + 1024 * 4);
+
+    // 4092 - 3072 =  offset of 1020 in the third page.
+    var ptr4092 = vector.getMutable(4092);
+    std.debug.assert(vector.getMutable(4092) == &vector.pages.items[3].data[1020]);
+
+    for (0..1024) |_| {
+        try vector.append(allocator, .{ .lmao = 0 });
+    }
+    std.debug.assert(vector.getMutable(4092) == ptr4092);
 }
 
 test "managed version" {
