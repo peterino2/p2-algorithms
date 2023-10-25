@@ -1,10 +1,9 @@
 const std = @import("std");
 const sparse_set = @import("sparse-set.zig");
 
-fn println(comptime fmt: []const u8, args: anytype) void 
-{
+fn println(comptime fmt: []const u8, args: anytype) void {
     std.debug.print(fmt ++ "\n", args);
-} 
+}
 
 const LookupPerfContext = struct {
     testName: []const u8 = "lookup perf 1 Billion Accesses",
@@ -12,8 +11,7 @@ const LookupPerfContext = struct {
     testSizes: std.ArrayList(usize),
     testTimes: std.ArrayList(std.ArrayList(f64)), //
 
-    pub fn init(allocator: std.mem.Allocator) @This()
-    {
+    pub fn init(allocator: std.mem.Allocator) @This() {
         return .{
             .dsName = std.ArrayList([]const u8).init(allocator),
             .testSizes = std.ArrayList(usize).init(allocator),
@@ -21,14 +19,12 @@ const LookupPerfContext = struct {
         };
     }
 
-    pub fn printResults(self: @This()) void 
-    {
+    pub fn printResults(self: @This()) void {
         // prints out results in a csv format
         println("Test Results: {s}", .{self.testName});
         std.debug.print("number of elements,", .{});
 
-        for(self.dsName.items) |name|
-        {
+        for (self.dsName.items) |name| {
             std.debug.print("{s},", .{name});
         }
 
@@ -36,13 +32,11 @@ const LookupPerfContext = struct {
         std.debug.assert(self.testSizes.items.len == self.testTimes.items.len);
 
         var i: usize = 0;
-        while(i < self.testSizes.items.len) : (i += 1)
-        {
+        while (i < self.testSizes.items.len) : (i += 1) {
             std.debug.print("{d},", .{self.testSizes.items[i]});
             var times = self.testTimes.items[i];
 
-            for(times.items) |entry|
-            {
+            for (times.items) |entry| {
                 std.debug.print("{d},", .{entry});
             }
 
@@ -51,17 +45,18 @@ const LookupPerfContext = struct {
     }
 };
 
-pub fn LookupPerfTest(
-    allocator: std.mem.Allocator,
-    perfContext: *LookupPerfContext,
-    comptime TestSize: comptime_int,
-    comptime AccessCount: comptime_int
-) !void {
+pub fn LookupPerfTest(allocator: std.mem.Allocator, perfContext: *LookupPerfContext, comptime TestSize: comptime_int, comptime AccessCount: comptime_int) !void {
     var prng = std.rand.DefaultPrng.init(12348);
     var rand = prng.random();
+    _ = rand;
 
     var testTimes = std.ArrayList(f64).init(allocator);
-    try testTimes.appendSlice(&.{0.0,0.0,0.0,0.0,});
+    try testTimes.appendSlice(&.{
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    });
 
     const TestPayload = struct {
         touchCount: u32 = 0,
@@ -70,16 +65,17 @@ pub fn LookupPerfTest(
 
     // Doing a test of 1 million accesses to random sparse set handles to one thousand hashmap lookups
     const TestMap = std.AutoHashMap(u32, TestPayload);
-    const TestSet = sparse_set.SparseMultiSet(struct{ obj: TestPayload = .{},});
+    const TestSet = sparse_set.SparseMultiSet(struct {
+        obj: TestPayload = .{},
+    });
     var timer = try std.time.Timer.start();
 
     println(" === preparing test with {d} entries === ", .{TestSize});
     var testMap = TestMap.init(allocator);
     defer testMap.deinit();
     var i: usize = 0;
-    while (i < TestSize) : (i += 1)
-    {
-        try testMap.put(@intCast(u32, i), .{});
+    while (i < TestSize) : (i += 1) {
+        try testMap.put(@as(u32, @intCast(i)), .{});
     }
     i = 0;
 
@@ -88,14 +84,13 @@ pub fn LookupPerfTest(
     {
         const startTime = timer.read();
         // random access for 1M.
-        while(i < AccessCount ) : (i += 1)
-        {
-            var id = @intCast(u32, i % TestSize);
+        while (i < AccessCount) : (i += 1) {
+            var id = @as(u32, @intCast(i % TestSize));
             testMap.getEntry(id).?.value_ptr.*.touchCount += 1;
         }
         const endTime = timer.read();
-        println("hashMap: {d} accesses executed in {d}s",.{ AccessCount, (@intToFloat(f64, endTime - startTime) / 1000000000)});
-        hashMapTime = @intToFloat(f64, endTime - startTime) / 1000000000; // index 0 
+        println("hashMap: {d} accesses executed in {d}s", .{ AccessCount, (@as(f64, @floatFromInt(endTime - startTime)) / 1000000000) });
+        hashMapTime = @as(f64, @floatFromInt(endTime - startTime)) / 1000000000; // index 0
         testTimes.items[0] = hashMapTime;
     }
 
@@ -104,18 +99,16 @@ pub fn LookupPerfTest(
         i = 0;
         const startTime = timer.read();
         // random access for 1M.
-        while( i < AccessCount ) : (i += 1)
-        {
+        while (i < AccessCount) : (i += 1) {
             var iter = testMap.iterator();
-            while(iter.next()) |entry|
-            {
+            while (iter.next()) |entry| {
                 entry.value_ptr.*.touchCount += 1;
                 i += 1;
             }
         }
         const endTime = timer.read();
-        println("hashMap_linear: {d} accesses executed in {d}s",.{ AccessCount, (@intToFloat(f64, endTime - startTime) / 1000000000)});
-        hashmap_linear_time = @intToFloat(f64, endTime - startTime) / 1000000000;
+        println("hashMap_linear: {d} accesses executed in {d}s", .{ AccessCount, (@as(f64, @floatFromInt(endTime - startTime)) / 1000000000) });
+        hashmap_linear_time = @as(f64, @floatFromInt(endTime - startTime)) / 1000000000;
         testTimes.items[2] = hashmap_linear_time;
     }
 
@@ -125,8 +118,7 @@ pub fn LookupPerfTest(
     var handlesList = std.ArrayList(sparse_set.SetHandle).init(allocator);
 
     i = 0;
-    while(i < TestSize) : (i += 1)
-    {
+    while (i < TestSize) : (i += 1) {
         var newHandle = try testSet.createObject(.{});
         try handlesList.append(newHandle);
     }
@@ -135,13 +127,12 @@ pub fn LookupPerfTest(
     i = 0;
     {
         const startTime = timer.read();
-        while(i < AccessCount) : (i += 1)
-        {
-            testSet.get(handlesList.items[ i % TestSize ], .obj).?.*.touchCount += 1;
+        while (i < AccessCount) : (i += 1) {
+            testSet.get(handlesList.items[i % TestSize], .obj).?.*.touchCount += 1;
         }
         const endTime = timer.read();
-        println("sparseSet: {d} accesses executed in {d}s",.{ AccessCount, (@intToFloat(f64, endTime - startTime) / 1000000000)});
-        sparseSetTime = @intToFloat(f64, endTime - startTime) / 1000000000;
+        println("sparseSet: {d} accesses executed in {d}s", .{ AccessCount, (@as(f64, @floatFromInt(endTime - startTime)) / 1000000000) });
+        sparseSetTime = @as(f64, @floatFromInt(endTime - startTime)) / 1000000000;
         testTimes.items[1] = sparseSetTime;
     }
 
@@ -151,13 +142,12 @@ pub fn LookupPerfTest(
     {
         const startTime = timer.read();
         var denseArray = testSet.denseItems(.obj);
-        while( i < AccessCount ) : (i += 1)
-        {
+        while (i < AccessCount) : (i += 1) {
             denseArray[i % TestSize].touchCount += 1;
         }
         const endTime = timer.read();
-        sparseset_linear_time = @intToFloat(f64, endTime - startTime) / 1000000000;
-        println("sparseSet_linear: {d} accesses executed in {d}s",.{ AccessCount, (@intToFloat(f64, endTime - startTime) / 1000000000)});
+        sparseset_linear_time = @as(f64, @floatFromInt(endTime - startTime)) / 1000000000;
+        println("sparseSet_linear: {d} accesses executed in {d}s", .{ AccessCount, (@as(f64, @floatFromInt(endTime - startTime)) / 1000000000) });
         testTimes.items[3] = sparseset_linear_time;
     }
 
@@ -176,8 +166,7 @@ pub fn count(comptime n: anytype) [n]u0 {
     return comptime [1]u0{0} ** n;
 }
 
-test "Perf test sparse vs hashmap"
-{
+test "Perf test sparse vs hashmap" {
     // this test does NOT care about freeing memory, just gonna let the arena hit it.
     var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
     defer arena.deinit();
@@ -189,8 +178,8 @@ test "Perf test sparse vs hashmap"
     try context.dsName.append("hashmap linear");
     try context.dsName.append("sparseset linear");
 
-    inline for (comptime count(100 - 1)) |_, i| {
-        try LookupPerfTest(arenaAlloc, &context, (i + 1) * (100 * K) / 100 , 100 * M);
+    inline for (comptime count(100 - 1), 0..) |_, i| {
+        try LookupPerfTest(arenaAlloc, &context, (i + 1) * (100 * K) / 100, 100 * M);
     }
 
     context.printResults();

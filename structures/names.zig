@@ -121,27 +121,26 @@ test "zname initialization and lookup" {
     defer destroyNameRegistry();
 
     const testComptimeName = "This is a name test";
-    const testName2 = "This is another name test";
-    _ = testName2;
+    const testComptimeName2 = "This is another name test";
 
     var r = getRegistry();
     var name = r.cname(testComptimeName);
     var name2 = r.name(testComptimeName);
+    var name4 = r.name(testComptimeName2);
 
     var fmtString = try std.fmt.allocPrint(std.testing.allocator, "morty I did horrible things to your {s}.", .{"locally elected representative"});
     defer std.testing.allocator.free(fmtString);
 
     var name3 = r.name(fmtString);
-    std.debug.print("\n{s}: {d}\n", .{ name.utf8(r), name.index });
-    std.debug.print("{s}: {d}\n", .{ name2.utf8(r), name2.index });
-    std.debug.print("{s}: {d}\n", .{ name3.utf8(r), name3.index });
 
-    var uninitializedName = Name{};
-
+    try std.testing.expectEqualSlices(u8, testComptimeName, name.utf8(r));
+    try std.testing.expectEqualSlices(u8, testComptimeName, name2.utf8(r));
     try std.testing.expect(name2.eql(name));
     try std.testing.expect(!name3.eql(name));
 
+    var uninitializedName: Name = .{};
     try std.testing.expect(uninitializedName.eql(r.name("Invalid")));
+    try std.testing.expect(!name4.eql(name3));
 
-    std.debug.print("names in table: {d}\n", .{r.count()});
+    try std.testing.expectEqualSlices(u8, name3.utf8(r), fmtString);
 }
