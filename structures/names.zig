@@ -20,7 +20,11 @@ pub const NameRegistry = struct {
     stringArena: std.heap.ArenaAllocator,
 
     // with this system errors should be EXCEEDINGLY rare, and in most cases they
-    // should have no problem
+    // should have no problem, as a result I downgrade all errors into this error status field.
+    // I think the enhanced ergonomics of being able to use names ubiquitously is worth losing the
+    // immediate handling of the trace.
+    //
+    // usage of names should be null checked anyway.
     errorStatus: NameRegistryStatus = .Ok,
 
     pub fn init(allocator: std.mem.Allocator) !@This() {
@@ -103,7 +107,7 @@ pub fn destroyNameRegistry() void {
     allocator.destroy(gRegistry);
 }
 
-// To make a Name, create one from a registry.
+// To make a Name, create one from a registry, call registry.name() or registry.cname() if it's a comptime name.
 pub const Name = struct {
     index: usize = 0,
 
