@@ -1,4 +1,13 @@
 const std = @import("std");
+pub fn initModule(b: *std.build.Builder, comptime libRoot: []const u8) void {
+    var opts = std.build.Builder.CreateModuleOptions{};
+    var path = std.build.LazyPath{};
+    path.path = libRoot ++ "algorithm.zig";
+
+    opts.source_file = path;
+
+    b.addModule("p2", opts);
+}
 
 pub fn build(b: *std.build.Builder) void {
     // Standard target options allows the person running `zig build` to choose

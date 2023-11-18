@@ -12,8 +12,6 @@ pub const Handle = struct {
     }
 };
 
-pub const NullHandle: Handle = .{};
-
 // Index pool
 //
 // This a data structure where a list of objects are stored contiguous in memory.

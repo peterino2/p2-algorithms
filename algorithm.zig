@@ -1,8 +1,10 @@
 // ---- ----
 const std = @import("std");
+const utils = @import("structures/utils.zig");
 
 const ArrayList = std.ArrayList;
 const ArrayListUnmanaged = std.ArrayListUnmanaged;
+pub const assertf = utils.assertf;
 
 pub const static_structures = @import("structures/static-structures.zig");
 pub const StaticArrayList = static_structures.StaticArrayList;
@@ -21,6 +23,10 @@ pub const SparseMultiSetAdvanced = sparse_set.SparseMultiSetAdvanced;
 pub const SetHandle = sparse_set.SetHandle;
 
 pub const stack_structures = @import("structures/stack-structures.zig");
+
+pub const index_pool = @import("structures/index-pool.zig");
+pub const IndexPoolHandle = index_pool.Handle;
+pub const IndexPool = index_pool.IndexPool;
 
 // ---- aliases ----
 pub const ObjectHandle = SetHandle;
