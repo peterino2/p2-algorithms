@@ -31,6 +31,8 @@ pub const IndexPool = index_pool.IndexPool;
 pub const names = @import("structures/names.zig");
 pub const Name = names.Name;
 pub const MakeName = names.MakeName;
+pub const createNameRegistry = names.createNameRegistry;
+pub const destroyNameRegistry = names.destroyNameRegistry;
 
 // ---- aliases ----
 pub const ObjectHandle = SetHandle;

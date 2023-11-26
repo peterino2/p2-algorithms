@@ -133,26 +133,25 @@ pub const Name = struct {
     pub fn utf8(self: *const @This()) []const u8 {
         // so nasty... and const-violating. but the ergonomics is so good...
         if (self.index == null) {
+            var index = getRegistry().InstallNameInner(self.string, false);
             var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
-            mutableThis.load();
+            mutableThis.*.index = index;
         }
 
         return getRegistry().pagedVector.get(self.index.?).*;
     }
 
-    pub fn load(self: *@This()) void {
-        self.index = getRegistry().InstallNameInner(self.string, false);
-    }
-
     pub fn eql(self: *const @This(), other: *const @This()) bool {
         if (self.index == null) {
+            var index = getRegistry().InstallNameInner(self.string, false);
             var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
-            mutableThis.load();
+            mutableThis.*.index = index;
         }
 
         if (other.index == null) {
-            var mutableThem = @as(*@This(), @ptrCast(@constCast(other)));
-            mutableThem.load();
+            var index = getRegistry().InstallNameInner(self.string, false);
+            var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
+            mutableThis.*.index = index;
         }
 
         return self.index == other.index;
