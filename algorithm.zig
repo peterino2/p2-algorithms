@@ -28,6 +28,10 @@ pub const index_pool = @import("structures/index-pool.zig");
 pub const IndexPoolHandle = index_pool.Handle;
 pub const IndexPool = index_pool.IndexPool;
 
+pub const names = @import("structures/names.zig");
+pub const Name = names.Name;
+pub const MakeName = names.MakeName;
+
 // ---- aliases ----
 pub const ObjectHandle = SetHandle;
 

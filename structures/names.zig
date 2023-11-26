@@ -19,8 +19,8 @@ pub const NameRegistry = struct {
     pagedVector: PagedVectorAdvanced([]const u8, 1024),
     stringArena: std.heap.ArenaAllocator,
 
-    // with this system errors should be EXCEEDINGLY rare, and in most cases they
-    // should have no problem, as a result I downgrade all errors into this error status field.
+    // with this system errors should be nonexistent
+    // as a result I downgrade all errors into this error status field.
     // I think the enhanced ergonomics of being able to use names ubiquitously is worth losing the
     // immediate handling of the trace.
     //
@@ -35,7 +35,7 @@ pub const NameRegistry = struct {
             .pagedVector = try PagedVectorAdvanced([]const u8, 1024).init(allocator),
         };
 
-        _ = self.cname(NameInvalidComptimeString);
+        _ = self.InstallNameInner(NameInvalidComptimeString, false);
         return self;
     }
 
@@ -44,26 +44,26 @@ pub const NameRegistry = struct {
     }
 
     pub fn name(self: *@This(), nameString: []const u8) Name {
-        return self.MakeNameInner(nameString, true);
+        var index = self.InstallNameInner(nameString, true);
+
+        return .{
+            .index = index,
+            .string = self.pagedVector.get(index).*,
+        };
     }
 
-    pub fn cname(self: *@This(), comptime comptimeString: []const u8) Name {
-        return self.MakeNameInner(comptimeString, false);
-    }
-
-    fn MakeNameInner(self: *@This(), nameString: []const u8, shouldCopy: bool) Name {
+    fn InstallNameInner(self: *@This(), nameString: []const u8, shouldCopy: bool) usize {
         var newString = nameString;
         // check if the string exists if it does just return it as a name.
         if (self.map.get(newString)) |index| {
-            return .{ .index = index };
+            return index;
         }
 
-        //
         if (shouldCopy) {
             var allocator = self.stringArena.allocator();
             newString = allocator.dupe(u8, nameString) catch {
                 self.errorStatus = .OutOfMemory;
-                return NameInvalid;
+                @panic("Out of memory during name operation");
             };
         }
 
@@ -71,15 +71,15 @@ pub const NameRegistry = struct {
         var newIndex = self.pagedVector.len();
         self.pagedVector.append(self.allocator, newString) catch {
             self.errorStatus = .OutOfMemory;
-            return NameInvalid;
+            @panic("Out of memory during name operation");
         };
 
         self.map.put(self.allocator, newString, newIndex) catch {
             self.errorStatus = .OutOfMemory;
-            return NameInvalid;
+            @panic("Out of memory during name operation");
         };
 
-        return .{ .index = newIndex };
+        return newIndex;
     }
 
     pub fn deinit(self: *@This()) void {
@@ -107,15 +107,48 @@ pub fn destroyNameRegistry() void {
     allocator.destroy(gRegistry);
 }
 
+pub fn MakeName(comptime string: []const u8) Name {
+    return Name.MakeComptime(string);
+}
+
 // To make a Name, create one from a registry, call registry.name() or registry.cname() if it's a comptime name.
 pub const Name = struct {
-    index: usize = 0,
+    index: ?usize = 0,
+    string: []const u8 = "Invalid",
 
-    pub fn utf8(self: @This(), registry: *const NameRegistry) []const u8 {
-        return registry.pagedVector.get(self.index).*;
+    pub fn MakeComptime(comptime string: []const u8) @This() {
+        return .{ .index = null, .string = string };
     }
 
-    pub fn eql(self: @This(), other: @This()) bool {
+    pub fn Make(string: []const u8) @This() {
+        return getRegistry().name(string);
+    }
+
+    pub fn utf8(self: *const @This()) []const u8 {
+        // so nasty... and const-violating. but the ergonomics is so good...
+        if (self.index == null) {
+            var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
+            mutableThis.load();
+        }
+
+        return getRegistry().pagedVector.get(self.index.?).*;
+    }
+
+    pub fn load(self: *@This()) void {
+        self.index = getRegistry().InstallNameInner(self.string, false);
+    }
+
+    pub fn eql(self: *const @This(), other: *const @This()) bool {
+        if (self.index == null) {
+            var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
+            mutableThis.load();
+        }
+
+        if (other.index == null) {
+            var mutableThem = @as(*@This(), @ptrCast(@constCast(other)));
+            mutableThem.load();
+        }
+
         return self.index == other.index;
     }
 };
@@ -128,7 +161,7 @@ test "zname initialization and lookup" {
     const testComptimeName2 = "This is another name test";
 
     var r = getRegistry();
-    var name = r.cname(testComptimeName);
+    var name = MakeName(testComptimeName);
     var name2 = r.name(testComptimeName);
     var name4 = r.name(testComptimeName2);
 
@@ -137,14 +170,14 @@ test "zname initialization and lookup" {
 
     var name3 = r.name(fmtString);
 
-    try std.testing.expectEqualSlices(u8, testComptimeName, name.utf8(r));
-    try std.testing.expectEqualSlices(u8, testComptimeName, name2.utf8(r));
-    try std.testing.expect(name2.eql(name));
-    try std.testing.expect(!name3.eql(name));
+    try std.testing.expectEqualSlices(u8, testComptimeName, name.utf8());
+    try std.testing.expectEqualSlices(u8, testComptimeName, name2.utf8());
+    try std.testing.expect(name2.eql(&name));
+    try std.testing.expect(!name3.eql(&name));
 
     var uninitializedName: Name = .{};
-    try std.testing.expect(uninitializedName.eql(r.name("Invalid")));
-    try std.testing.expect(!name4.eql(name3));
+    try std.testing.expect(uninitializedName.eql(&r.name("Invalid")));
+    try std.testing.expect(!name4.eql(&name3));
 
-    try std.testing.expectEqualSlices(u8, name3.utf8(r), fmtString);
+    try std.testing.expectEqualSlices(u8, name3.utf8(), fmtString);
 }
