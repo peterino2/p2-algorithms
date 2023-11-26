@@ -53,6 +53,9 @@ pub const NameRegistry = struct {
     }
 
     fn InstallNameInner(self: *@This(), nameString: []const u8, shouldCopy: bool) usize {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
         var newString = nameString;
         // check if the string exists if it does just return it as a name.
         if (self.map.get(newString)) |index| {
