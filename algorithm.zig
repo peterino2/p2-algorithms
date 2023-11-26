@@ -29,6 +29,8 @@ pub const IndexPoolHandle = index_pool.Handle;
 pub const IndexPool = index_pool.IndexPool;
 
 pub const names = @import("structures/names.zig");
+
+pub const NameInvalid = names.NameInvalid;
 pub const Name = names.Name;
 pub const MakeName = names.MakeName;
 pub const createNameRegistry = names.createNameRegistry;

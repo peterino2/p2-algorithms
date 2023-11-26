@@ -15,7 +15,7 @@ const NameInvalidComptimeString = "Invalid";
 // trying out a names scheme similar in vein to unreal engine's FNames
 pub const NameRegistry = struct {
     allocator: std.mem.Allocator,
-    map: std.StringHashMapUnmanaged(usize),
+    map: std.StringHashMapUnmanaged(u32),
     pagedVector: PagedVectorAdvanced([]const u8, 1024),
     stringArena: std.heap.ArenaAllocator,
     mutex: std.Thread.Mutex = .{},
@@ -40,8 +40,8 @@ pub const NameRegistry = struct {
         return self;
     }
 
-    pub fn count(self: @This()) usize {
-        return self.pagedVector.len();
+    pub fn count(self: @This()) u32 {
+        return @intCast(self.pagedVector.len());
     }
 
     pub fn name(self: *@This(), nameString: []const u8) Name {
@@ -53,7 +53,7 @@ pub const NameRegistry = struct {
         };
     }
 
-    fn InstallNameInner(self: *@This(), nameString: []const u8, shouldCopy: bool) usize {
+    fn InstallNameInner(self: *@This(), nameString: []const u8, shouldCopy: bool) u32 {
         self.mutex.lock();
         defer self.mutex.unlock();
 
@@ -72,7 +72,7 @@ pub const NameRegistry = struct {
         }
 
         // add to registry
-        var newIndex = self.pagedVector.len();
+        var newIndex = @as(u32, @intCast(self.pagedVector.len()));
         self.pagedVector.append(self.allocator, newString) catch {
             self.errorStatus = .OutOfMemory;
             @panic("Out of memory during name operation");
@@ -113,16 +113,16 @@ pub fn destroyNameRegistry() void {
     allocator.destroy(gRegistry);
 }
 
-pub fn MakeName(comptime string: []const u8) Name {
+pub fn MakeName(string: []const u8) Name {
     return Name.MakeComptime(string);
 }
 
 // To make a Name, create one from a registry, call registry.name() or registry.cname() if it's a comptime name.
 pub const Name = struct {
-    index: ?usize = 0,
+    index: ?u32 = 0,
     string: []const u8 = "Invalid",
 
-    pub fn MakeComptime(comptime string: []const u8) @This() {
+    pub fn MakeComptime(string: []const u8) @This() {
         return .{ .index = null, .string = string };
     }
 
@@ -130,10 +130,25 @@ pub const Name = struct {
         return getRegistry().name(string);
     }
 
+    pub fn fromUtf8(string: []const u8) @This() {
+        return getRegistry().name(string);
+    }
+
+    pub fn handle(self: *const @This()) u32 {
+        if (self.index == null) {
+            var index = getRegistry().InstallNameInner(self.string, false);
+            var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
+            mutableThis.*.index = index;
+        }
+
+        return self.index.?;
+    }
+
     pub fn utf8(self: *const @This()) []const u8 {
         // so nasty... and const-violating. but the ergonomics is so good...
         if (self.index == null) {
-            var index = getRegistry().InstallNameInner(self.string, false);
+            // fuck it..  i'll pay the cost of duplicating even comptime strings
+            var index = getRegistry().InstallNameInner(self.string, true);
             var mutableThis = @as(*@This(), @ptrCast(@constCast(self)));
             mutableThis.*.index = index;
         }
