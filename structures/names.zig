@@ -18,6 +18,7 @@ pub const NameRegistry = struct {
     map: std.StringHashMapUnmanaged(usize),
     pagedVector: PagedVectorAdvanced([]const u8, 1024),
     stringArena: std.heap.ArenaAllocator,
+    mutex: std.Thread.Mutex = .{},
 
     // with this system errors should be nonexistent
     // as a result I downgrade all errors into this error status field.
@@ -86,6 +87,8 @@ pub const NameRegistry = struct {
     }
 
     pub fn deinit(self: *@This()) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
         self.map.deinit(self.allocator);
         self.pagedVector.deinit(self.allocator);
         self.stringArena.deinit();
