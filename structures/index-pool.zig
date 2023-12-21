@@ -51,6 +51,10 @@ pub fn IndexPool(comptime T: type) type {
             };
         }
 
+        pub fn count(self: @This()) usize {
+            return self.active.items.len;
+        }
+
         pub fn new(self: *@This(), initVal: T) !Handle {
             if (self.dead.items.len > 0) {
                 const revivedIndex = self.dead.items[self.dead.items.len - 1];
