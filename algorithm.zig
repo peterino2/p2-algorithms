@@ -5,6 +5,7 @@ const utils = @import("structures/utils.zig");
 const ArrayList = std.ArrayList;
 const ArrayListUnmanaged = std.ArrayListUnmanaged;
 pub const assertf = utils.assertf;
+pub const asserts = utils.asserts;
 
 pub const static_structures = @import("structures/static-structures.zig");
 pub const StaticArrayList = static_structures.StaticArrayList;

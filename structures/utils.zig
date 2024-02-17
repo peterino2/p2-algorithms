@@ -65,3 +65,11 @@ pub fn assertf(eval: anytype, comptime fmt: []const u8, args: anytype) !void {
         return error.AssertFailure;
     }
 }
+
+pub fn asserts(eval: anytype, comptime fmt: []const u8, args: anytype, comptime tag: []const u8) void {
+    if (!eval) {
+        std.debug.print("[Error]: " ++ fmt, args);
+        std.debug.print("> " ++ tag, .{});
+        unreachable;
+    }
+}
